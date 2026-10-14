@@ -1,0 +1,225 @@
+<title>메리츠화재 시책 현황</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 한 손으로 읽는 단일 컬럼. 상단 브랜드 띠 → 이름·소속 → 실적 요약 박스 → 시책 카드 → 하단 안내 */
+:root{
+  --bg:#F6F4F3;
+  --surface:#FFFFFF;
+  --ink:#27262B;
+  --muted:#6D6A70;
+  --line:#E5DFDD;
+  --brand:#D5112F;
+  --brand-ink:#B80E28;
+  --tint:#FBEEF0;
+  --on-brand:#FFFFFF;
+  --focus:#1D5FD1;
+  --font-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141315;--surface:#1E1C1F;--ink:#F3F0EF;--muted:#AAA4A7;--line:#38343A;
+    --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141315;--surface:#1E1C1F;--ink:#F3F0EF;--muted:#AAA4A7;--line:#38343A;
+  --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+  margin:0;padding-block:0 32px;min-height:100vh;
+}
+.bar{height:8px;background:var(--brand)}
+.wrap{max-width:480px;margin:0 auto;padding-top:28px;display:flex;flex-direction:column;gap:20px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{font-size:15px;font-weight:700;color:var(--brand-ink);letter-spacing:.02em}
+.brand::after{content:"";display:block;width:52px;height:4px;background:var(--brand);margin-top:8px}
+h1{font-size:25px;line-height:1.3;font-weight:700;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;color:var(--muted);font-size:14px;padding-bottom:16px;border-bottom:1px solid var(--line);margin:0}
+.meta span{min-width:0;overflow-wrap:anywhere}
+.meta b{font-weight:500;color:var(--ink)}
+.sum{background:var(--tint);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.sum .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.sum .lab{color:var(--muted);font-size:14px}
+.sum .big{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.sum .small{font-size:16px;font-weight:500;font-variant-numeric:tabular-nums}
+.sum .sep{height:1px;background:var(--line);margin:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.card .head{display:flex;align-items:center;gap:12px}
+.badge{background:var(--brand);color:var(--on-brand);font-size:13px;font-weight:700;border-radius:8px;min-width:34px;height:28px;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.card h2{font-size:18px;font-weight:700;margin:0}
+.card .body{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.card .basis{color:var(--muted);font-size:13.5px;min-width:0;flex:1}
+.amt{text-align:right;flex-shrink:0}
+.amt .m{display:block;font-size:26px;font-weight:700;color:var(--brand-ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1.2}
+.amt .w{display:block;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.foot{display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--line);margin-top:4px}
+.foot h3{font-size:14px;font-weight:700;margin:0}
+.foot p{margin:0;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.foot p.src{font-size:12.5px}
+form{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+label{font-size:14px;font-weight:500}
+input[type=text]{
+  width:100%;height:56px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);
+  font:inherit;font-size:22px;letter-spacing:.12em;padding:0 16px;font-variant-numeric:tabular-nums;
+}
+input[type=text]::placeholder{color:var(--muted);letter-spacing:.05em;font-size:16px;opacity:.8}
+button{
+  font:inherit;font-weight:700;font-size:17px;height:54px;border-radius:12px;border:0;cursor:pointer;
+  background:var(--brand);color:var(--on-brand);
+}
+button:disabled{opacity:.6;cursor:default}
+button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);height:46px;font-size:15px;font-weight:500}
+input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.err{color:var(--brand-ink);font-size:14px;margin:0;min-height:1.5em}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:400;color:var(--muted)}
+.chk input{width:18px;height:18px;accent-color:var(--brand)}
+.hint{color:var(--muted);font-size:13px;margin:0}
+.nodata{color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){ button{transition:opacity .15s} }
+</style>
+
+<div class="bar" aria-hidden="true"></div>
+<main class="wrap" id="app"></main>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+  var D = JSON.parse(document.getElementById('data').textContent);
+  var app = document.getElementById('app');
+  var KEY = 'mz_code';
+
+  function b64(s){ var bin = atob(s), u = new Uint8Array(bin.length); for (var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; }
+  function hex(u){ var s=''; for (var i=0;i<u.length;i++) s += ('0'+u[i].toString(16)).slice(-2); return s; }
+  function won(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+  function man(n){
+    if (!n) return '0원';
+    var v = n/10000;
+    var t = Number.isInteger(v) ? v.toLocaleString('ko-KR')
+          : (Math.round(v*10)/10).toLocaleString('ko-KR',{minimumFractionDigits:1,maximumFractionDigits:1});
+    return t + '만원';
+  }
+  function el(tag, cls, text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  function store(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} }
+  function load(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+  async function lookup(code){
+    var enc = new TextEncoder();
+    var km = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveBits']);
+    var bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt:b64(D.salt), iterations:D.iter, hash:'SHA-256'}, km, 384);
+    var u = new Uint8Array(bits);
+    var blob = D.rec[hex(u.slice(0,16))];
+    if (!blob) return null;
+    var raw = b64(blob);
+    var key = await crypto.subtle.importKey('raw', u.slice(16), 'AES-GCM', false, ['decrypt']);
+    var plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:raw.slice(0,12)}, key, raw.slice(12));
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+  function header(){
+    var f = document.createDocumentFragment();
+    f.appendChild(el('div','brand',D.brand));
+    return f;
+  }
+
+  function showLogin(msg, prefill){
+    app.textContent = '';
+    app.appendChild(header());
+    app.appendChild(el('h1', null, D.title_login));
+    app.appendChild(el('p','sub','설계사 코드 9자리를 입력하면 내 실적과 시책을 확인할 수 있어요.'));
+    var form = el('form');
+    var lab = el('label', null, '설계사 코드'); lab.htmlFor = 'code';
+    var inp = el('input'); inp.type='text'; inp.id='code'; inp.name='code';
+    inp.inputMode='numeric'; inp.pattern='[0-9]*'; inp.maxLength=9; inp.autocomplete='off'; inp.placeholder='숫자 9자리';
+    inp.setAttribute('aria-describedby','err');
+    if (prefill) inp.value = prefill;
+    var err = el('p','err', msg||''); err.id='err'; err.setAttribute('role','alert');
+    var cl = el('label','chk'); var cb = el('input'); cb.type='checkbox'; cb.id='remember'; cb.checked = true;
+    cl.appendChild(cb); cl.appendChild(document.createTextNode('이 휴대폰에 코드 기억하기'));
+    var btn = el('button', null, '조회'); btn.type='submit';
+    form.append(lab, inp, err, cl, btn);
+    form.addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      var code = inp.value.replace(/\D/g,'');
+      if (code.length !== 9){ err.textContent = '설계사 코드는 숫자 9자리예요. 다시 확인해 주세요.'; inp.focus(); return; }
+      btn.disabled = true; btn.textContent = '조회 중...'; err.textContent='';
+      try{
+        var rec = await lookup(code);
+        if (!rec){ btn.disabled=false; btn.textContent='조회'; err.textContent='일치하는 설계사 코드가 없어요. 코드를 다시 확인해 주세요.'; inp.focus(); return; }
+        store(KEY, cb.checked ? code : null);
+        showResult(rec);
+      }catch(e){
+        btn.disabled=false; btn.textContent='조회'; err.textContent='조회에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      }
+    });
+    app.appendChild(form);
+    app.appendChild(el('p','hint','코드를 모르면 담당 매니저에게 문의해 주세요.'));
+    setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 0);
+  }
+
+  function showResult(r){
+    app.textContent = '';
+    app.appendChild(header());
+    app.appendChild(el('h1', null, r.n + ' 님 ' + D.month + ' ' + D.page_title));
+    app.appendChild(el('p','sub', D.basis_date + ' 기준'));
+
+    var meta = el('p','meta');
+    var s1 = el('span'); s1.append('지사 ', Object.assign(el('b'),{textContent:r.b}));
+    var s2 = el('span'); s2.append('담당 ', Object.assign(el('b'),{textContent:r.m}));
+    meta.append(s1, s2);
+    app.appendChild(meta);
+
+    var sum = el('section','sum');
+    var last = D.perf.length - 1;
+    var top = el('div','row');
+    top.append(el('span','lab', D.perf[last]), el('span','big', won(r.p[last])));
+    sum.appendChild(top);
+    for (var i = last-1; i >= 0; i--){
+      sum.appendChild(el('hr','sep'));
+      var row = el('div','row');
+      row.append(el('span','lab', D.perf[i]), el('span','small', won(r.p[i])));
+      sum.appendChild(row);
+    }
+    app.appendChild(sum);
+
+    D.inc.forEach(function(name, i){
+      var c = el('section','card');
+      var h = el('div','head');
+      h.append(el('span','badge', String(i+1).padStart(2,'0')), el('h2',null,name));
+      var b = el('div','body');
+      b.appendChild(el('span','basis', D.note[i] || '시책 기준은 하단 안내를 확인해 주세요.'));
+      var a = el('div','amt');
+      a.appendChild(el('span','m', man(r.i[i])));
+      if (r.i[i]) a.appendChild(el('span','w', won(r.i[i])));
+      b.appendChild(a);
+      c.append(h, b);
+      app.appendChild(c);
+    });
+
+    var foot = el('section','foot');
+    foot.appendChild(el('h3',null,D.footer_title));
+    D.footer_lines.forEach(function(t){ foot.appendChild(el('p',null,t)); });
+    foot.appendChild(el('p','src',D.source_line));
+    app.appendChild(foot);
+
+    var back = el('button','ghost','다른 코드로 조회'); back.type='button';
+    back.addEventListener('click', function(){ store(KEY,null); showLogin(); window.scrollTo(0,0); });
+    app.appendChild(back);
+    window.scrollTo(0,0);
+  }
+
+  var saved = load(KEY);
+  if (saved && /^\d{9}$/.test(saved)){
+    lookup(saved).then(function(rec){ rec ? showResult(rec) : showLogin(); }, function(){ showLogin(); });
+  } else {
+    showLogin();
+  }
+})();
+</script>
