@@ -17,19 +17,22 @@
   --on-brand:#FFFFFF;
   --focus:#1D5FD1;
   --ok:#17784A;
+  --gold:#E0A800;
+  --on-gold:#2B2100;
+  --gold-ink:#8A6200;
   --track:#ECE6E4;
   --font-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#141315;--surface:#1E1C1F;--ink:#F3F0EF;--muted:#AAA4A7;--line:#38343A;
-    --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;--ok:#4CC38A;--track:#38343A;
+    --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;--ok:#4CC38A;--track:#38343A;--gold:#F0BE3C;--on-gold:#2B2100;--gold-ink:#F2CC6B;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#141315;--surface:#1E1C1F;--ink:#F3F0EF;--muted:#AAA4A7;--line:#38343A;
-  --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;--ok:#4CC38A;--track:#38343A;
+  --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;--ok:#4CC38A;--track:#38343A;--gold:#F0BE3C;--on-gold:#2B2100;--gold-ink:#F2CC6B;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -90,12 +93,12 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
 .gauge+.gauge{padding-top:14px;border-top:1px solid var(--line)}
 .gtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .gl{font-size:16px;font-weight:700}
-.gp{font-size:15px;font-weight:700;color:var(--brand-ink);font-variant-numeric:tabular-nums}
+.gp{font-size:15px;font-weight:700;color:var(--gold-ink);font-variant-numeric:tabular-nums}
 .gp.ok{color:var(--ok)}
 .gp.wait{color:var(--muted);font-weight:500}
 .track{height:14px;border-radius:7px;background:var(--track);overflow:hidden}
-.fill{height:100%;border-radius:7px;background:var(--brand)}
-.fill.ok{background:var(--ok)}
+.fill{height:100%;border-radius:7px;background:var(--gold)}
+.badge.gold{background:var(--gold);color:var(--on-gold)}
 .gnum{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .gnum b{font-weight:500;color:var(--ink)}
 .grest{margin:0;font-size:13px;color:var(--muted)}
@@ -183,7 +186,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
   function promoCard(P, r){
     var c = el('section','card');
     var h = el('div','head');
-    h.append(el('span','badge', String(D.inc.length+1).padStart(2,'0')), el('h2',null,P.name));
+    h.append(el('span','badge gold', String(D.inc.length+1).padStart(2,'0')), el('h2',null,P.name));
     c.appendChild(h);
     if (P.desc) c.appendChild(el('p','pdesc',P.desc));
     P.items.forEach(function(it){
@@ -201,7 +204,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
       tr.setAttribute('aria-label', it.l + ' ' + P.name + ' 달성률');
       tr.setAttribute('aria-valuemin','0'); tr.setAttribute('aria-valuemax', String(P.target));
       tr.setAttribute('aria-valuenow', String(Math.min(v, P.target)));
-      var f = el('div','fill' + (done ? ' ok' : ''));
+      var f = el('div','fill');
       f.style.width = Math.max(0, Math.min(100, pct)) + '%';
       tr.appendChild(f);
       var nm = el('div','gnum');
