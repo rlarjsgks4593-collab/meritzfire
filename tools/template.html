@@ -16,18 +16,20 @@
   --tint:#FBEEF0;
   --on-brand:#FFFFFF;
   --focus:#1D5FD1;
+  --ok:#17784A;
+  --track:#ECE6E4;
   --font-body:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#141315;--surface:#1E1C1F;--ink:#F3F0EF;--muted:#AAA4A7;--line:#38343A;
-    --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;
+    --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;--ok:#4CC38A;--track:#38343A;
     color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --bg:#141315;--surface:#1E1C1F;--ink:#F3F0EF;--muted:#AAA4A7;--line:#38343A;
-  --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;
+  --brand:#E8344F;--brand-ink:#FF6B80;--tint:#2B1B1F;--on-brand:#FFFFFF;--focus:#7AA7FF;--ok:#4CC38A;--track:#38343A;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -83,7 +85,21 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
 .chk input{width:18px;height:18px;accent-color:var(--brand)}
 .hint{color:var(--muted);font-size:13px;margin:0}
 .nodata{color:var(--muted)}
-@media (prefers-reduced-motion:no-preference){ button{transition:opacity .15s} }
+.pdesc{margin:-4px 0 0;color:var(--muted);font-size:13.5px}
+.gauge{display:flex;flex-direction:column;gap:8px}
+.gauge+.gauge{padding-top:14px;border-top:1px solid var(--line)}
+.gtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.gl{font-size:16px;font-weight:700}
+.gp{font-size:15px;font-weight:700;color:var(--brand-ink);font-variant-numeric:tabular-nums}
+.gp.ok{color:var(--ok)}
+.gp.wait{color:var(--muted);font-weight:500}
+.track{height:14px;border-radius:7px;background:var(--track);overflow:hidden}
+.fill{height:100%;border-radius:7px;background:var(--brand)}
+.fill.ok{background:var(--ok)}
+.gnum{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.gnum b{font-weight:500;color:var(--ink)}
+.grest{margin:0;font-size:13px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){ button{transition:opacity .15s} .fill{transition:width .5s ease} }
 </style>
 
 <div class="bar" aria-hidden="true"></div>
@@ -164,6 +180,41 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
     setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 0);
   }
 
+  function promoCard(P, r){
+    var c = el('section','card');
+    var h = el('div','head');
+    h.append(el('span','badge', String(D.inc.length+1).padStart(2,'0')), el('h2',null,P.name));
+    c.appendChild(h);
+    if (P.desc) c.appendChild(el('p','pdesc',P.desc));
+    P.items.forEach(function(it){
+      var has = it.k >= 0;
+      var v = has ? r.p[it.k] : 0;
+      var pct = P.target ? v / P.target * 100 : 0;
+      var done = has && v >= P.target;
+      var g = el('div','gauge');
+      var top = el('div','gtop');
+      top.appendChild(el('span','gl', it.l));
+      top.appendChild(el('span','gp' + (done ? ' ok' : (has ? '' : ' wait')),
+        !has ? '집계 전' : (done ? '달성 완료 ' + Math.floor(pct) + '%' : Math.floor(pct) + '%')));
+      var tr = el('div','track');
+      tr.setAttribute('role','progressbar');
+      tr.setAttribute('aria-label', it.l + ' ' + P.name + ' 달성률');
+      tr.setAttribute('aria-valuemin','0'); tr.setAttribute('aria-valuemax', String(P.target));
+      tr.setAttribute('aria-valuenow', String(Math.min(v, P.target)));
+      var f = el('div','fill' + (done ? ' ok' : ''));
+      f.style.width = Math.max(0, Math.min(100, pct)) + '%';
+      tr.appendChild(f);
+      var nm = el('div','gnum');
+      var a = el('span'); a.append('현재 ', Object.assign(el('b'),{textContent: won(v)}));
+      var b = el('span'); b.append('목표 ', Object.assign(el('b'),{textContent: won(P.target)}));
+      nm.append(a, b);
+      g.append(top, tr, nm);
+      g.appendChild(el('p','grest', !has ? it.l + ' 실적 자료가 들어오면 표시돼요.' : (done ? '목표를 달성했어요.' : '목표까지 ' + won(P.target - v) + ' 남았어요.')));
+      c.appendChild(g);
+    });
+    return c;
+  }
+
   function showResult(r){
     app.textContent = '';
     app.appendChild(header());
@@ -202,6 +253,8 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
       c.append(h, b);
       app.appendChild(c);
     });
+
+    if (D.promo) app.appendChild(promoCard(D.promo, r));
 
     var foot = el('section','foot');
     foot.appendChild(el('h3',null,D.footer_title));

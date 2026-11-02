@@ -58,44 +58,60 @@ def basis_note(ii):
             break
     return best
 
-salt = os.urandom(16)
-def derive(code):
-    kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=48, salt=salt, iterations=ITER)
-    return kdf.derive(code.encode())
-
-rec, seen = {}, set()
-for r in data:
-    code = norm_code(r[c_code])
-    if code in seen:
-        print('중복 코드 건너뜀:', code); continue
-    seen.add(code)
-    d = derive(code)
-    rid, key = d[:16].hex(), d[16:]
-    payload = {
-        'n': str(r[c_name]).strip(), 'b': str(r[c_br]).strip(), 'm': str(r[c_mgr]).strip(),
-        'p': [num(r[i]) for i in perf_idx], 'i': [num(r[i]) for i in inc_idx],
-    }
-    iv = os.urandom(12)
-    ct = AESGCM(key).encrypt(iv, json.dumps(payload, ensure_ascii=False).encode(), None)
-    rec[rid] = base64.b64encode(iv + ct).decode()
-
 perf_labels = [header[i] for i in perf_idx]
 m = re.search(r'(\d+월)', perf_labels[-1])
-meta = {
-    'salt': base64.b64encode(salt).decode(), 'iter': ITER, 'rec': rec,
-    'brand': cfg['brand'], 'page_title': cfg['page_title'],
-    'title_login': '내 실적·시책 확인',
-    'month': m.group(1) if m else '',
-    'basis_date': cfg['basis_date'],
-    'perf': perf_labels, 'inc': [header[i] for i in inc_idx],
-    'note': [basis_note(i) for i in inc_idx],
-    'footer_title': cfg['footer_title'], 'footer_lines': cfg['footer_lines'],
-    'source_line': cfg['source_line'].replace('{basis_date}', cfg['basis_date']),
-}
-html = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
-blob = json.dumps(meta, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
-html = html.replace('__DATA__', blob)
-out = os.path.join(HERE, 'dist', 'index.html')
-open(out, 'w', encoding='utf-8').write(html)
-print(f'설계사 {len(rec)}명 · 실적 {perf_labels} · 시책 {meta["inc"]} · 기준문구 {meta["note"]}')
-print(f'출력: {out} ({os.path.getsize(out)/1024:.0f} KB)')
+OUT = os.environ.get('BUILD_OUT') or os.path.join(HERE, 'dist')
+
+def build_page(promo=None, subdir=''):
+    salt = os.urandom(16)
+    def derive(code):
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=48, salt=salt, iterations=ITER)
+        return kdf.derive(code.encode())
+    rec, seen = {}, set()
+    for r in data:
+        code = norm_code(r[c_code])
+        if code in seen:
+            print('중복 코드 건너뜀:', code); continue
+        seen.add(code)
+        d = derive(code)
+        rid, key = d[:16].hex(), d[16:]
+        payload = {
+            'n': str(r[c_name]).strip(), 'b': str(r[c_br]).strip(), 'm': str(r[c_mgr]).strip(),
+            'p': [num(r[i]) for i in perf_idx], 'i': [num(r[i]) for i in inc_idx],
+        }
+        iv = os.urandom(12)
+        ct = AESGCM(key).encrypt(iv, json.dumps(payload, ensure_ascii=False).encode(), None)
+        rec[rid] = base64.b64encode(iv + ct).decode()
+    meta = {
+        'salt': base64.b64encode(salt).decode(), 'iter': ITER, 'rec': rec,
+        'brand': cfg['brand'], 'page_title': cfg['page_title'],
+        'title_login': '내 실적·시책 확인',
+        'month': m.group(1) if m else '',
+        'basis_date': cfg['basis_date'],
+        'perf': perf_labels, 'inc': [header[i] for i in inc_idx],
+        'note': [basis_note(i) for i in inc_idx],
+        'footer_title': cfg['footer_title'], 'footer_lines': cfg['footer_lines'],
+        'source_line': cfg['source_line'].replace('{basis_date}', cfg['basis_date']),
+    }
+    if promo:
+        items = []
+        for mo in promo['months']:
+            k = next((j for j, lab in enumerate(perf_labels) if lab.startswith(mo)), -1)
+            items.append({'l': mo, 'k': k})
+        meta['promo'] = {'name': promo['name'], 'desc': promo.get('desc', ''),
+                         'target': int(promo['target']), 'items': items}
+    html = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
+    blob = json.dumps(meta, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
+    html = html.replace('__DATA__', blob)
+    folder = os.path.join(OUT, subdir) if subdir else OUT
+    os.makedirs(folder, exist_ok=True)
+    out = os.path.join(folder, 'index.html')
+    open(out, 'w', encoding='utf-8').write(html)
+    extra = f' · 프로모션 {[(it["l"], it["k"]) for it in meta["promo"]["items"]]}' if promo else ''
+    print(f'[{subdir or "기본"}] 설계사 {len(rec)}명 · 실적 {perf_labels} · 시책 {meta["inc"]} · 기준문구 {meta["note"]}{extra}')
+    print(f'출력: {out} ({os.path.getsize(out)/1024:.0f} KB)')
+
+build_page()
+promo = cfg.get('promo')
+if promo:
+    build_page(promo, promo.get('folder', 'ss'))

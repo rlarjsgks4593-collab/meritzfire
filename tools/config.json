@@ -7,5 +7,15 @@
     "※ 시책 지급 기준과 제외 대상은 지점 공지를 확인해 주세요."
   ],
   "source_line": "자료: {basis_date} 기준 집계",
-  "pbkdf2_iterations": 150000
+  "pbkdf2_iterations": 150000,
+  "promo": {
+    "name": "SS컬렉션",
+    "desc": "11월·12월 각 월 실적 100만원 달성",
+    "target": 1000000,
+    "months": [
+      "11월",
+      "12월"
+    ],
+    "folder": "ss"
+  }
 }
