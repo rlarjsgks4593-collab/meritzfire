@@ -67,9 +67,11 @@ def make_month(xlsx, basis, salt):
     c_mgr, c_br, c_code, c_name = col('담당매니저명'), col('지사명'), col('설계사 코드'), col('설계사명')
     data = [r for r in rows[1:] if r and r[c_code] not in (None, '')]
     perf_idx = [i for i, h in enumerate(header) if h.endswith('실적')]
-    inc_idx = [i for i, h in enumerate(header) if h.endswith('시책금')]
+    fixed = {c_mgr, c_br, c_code, c_name}
+    # 고정 컬럼과 '…실적' 컬럼을 뺀 나머지 이름 있는 컬럼은 모두 시책 카드로 본다 (…시책금, …합계 등)
+    inc_idx = [i for i, h in enumerate(header) if h and i not in fixed and not h.endswith('실적')]
     if not perf_idx or not inc_idx:
-        sys.exit(f'실적/시책금 컬럼을 찾지 못했습니다: {header}')
+        sys.exit(f'실적/시책 컬럼을 찾지 못했습니다: {header}')
     perf_labels = [header[i] for i in perf_idx]
     mm = re.search(r'(\d+월)', perf_labels[-1])
     if not mm:
@@ -109,6 +111,14 @@ def make_month(xlsx, basis, salt):
     return blob
 
 
+def sort_months(order):
+    # 월 번호순 정렬. 연말~연초(예: 12월, 1월)가 같이 있으면 1~6월을 다음 해로 본다.
+    nums = [int(re.match(r'(\d+)', m).group(1)) for m in order]
+    wrap = any(n >= 10 for n in nums) and any(n <= 3 for n in nums)
+    key = lambda m: (lambda n: n + 12 if wrap and n <= 6 else n)(int(re.match(r'(\d+)', m).group(1)))
+    return sorted(order, key=key)
+
+
 def order_path():
     return os.path.join(MONTHS, 'index.json')
 
@@ -128,6 +138,7 @@ def ingest(xlsx, basis):
     order = load_order()
     if blob['month'] not in order:
         order.append(blob['month'])
+    order = sort_months(order)
     json.dump({'order': order}, open(order_path(), 'w', encoding='utf-8'), ensure_ascii=False)
 
 
