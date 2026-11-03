@@ -150,7 +150,7 @@ def build_site():
     months = []
     for i, label in enumerate(order):
         b = json.load(open(os.path.join(MONTHS, label + '.json'), encoding='utf-8'))
-        months.append({'label': label, 'basis_date': b['basis_date'], 'final': i < len(order) - 1,
+        months.append({'label': label, 'basis_date': b['basis_date'], 'final': i < len(order) - 1 or label in cfg.get('final_months', []),
                        'perf': b['perf'], 'inc': [cfg.get('inc_labels', {}).get(x, x) for x in b['inc']],
                        'note': b['note'], 'rec': b['rec']})
     tabs = [{'l': m['label']} for m in months]
