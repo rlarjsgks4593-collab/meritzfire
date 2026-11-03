@@ -88,6 +88,13 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
 .chk input{width:18px;height:18px;accent-color:var(--brand)}
 .hint{color:var(--muted);font-size:13px;margin:0}
 .nodata{color:var(--muted)}
+.tabs{display:flex;gap:6px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.tab{flex:1;min-width:0;height:44px;border-radius:10px;border:0;background:transparent;color:var(--muted);font-size:16px;font-weight:700}
+.tab[aria-selected="true"]{background:var(--brand);color:var(--on-brand)}
+.tab.pending{font-weight:500}
+.tab small{font-weight:400;font-size:12px;margin-left:4px;opacity:.85}
+.msg{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;color:var(--muted);margin:0}
+.final{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--tint);color:var(--brand-ink);font-size:12px;font-weight:700;vertical-align:1px}
 .pdesc{margin:-4px 0 0;color:var(--muted);font-size:13.5px}
 .gauge{display:flex;flex-direction:column;gap:8px}
 .gauge+.gauge{padding-top:14px;border-top:1px solid var(--line)}
@@ -134,12 +141,18 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
     var km = await crypto.subtle.importKey('raw', enc.encode(code), 'PBKDF2', false, ['deriveBits']);
     var bits = await crypto.subtle.deriveBits({name:'PBKDF2', salt:b64(D.salt), iterations:D.iter, hash:'SHA-256'}, km, 384);
     var u = new Uint8Array(bits);
-    var blob = D.rec[hex(u.slice(0,16))];
-    if (!blob) return null;
-    var raw = b64(blob);
+    var id = hex(u.slice(0,16));
     var key = await crypto.subtle.importKey('raw', u.slice(16), 'AES-GCM', false, ['decrypt']);
-    var plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:raw.slice(0,12)}, key, raw.slice(12));
-    return JSON.parse(new TextDecoder().decode(plain));
+    var views = {}, found = false;
+    for (var i = 0; i < D.months.length; i++){
+      var mo = D.months[i], blob = mo.rec[id];
+      if (!blob) continue;
+      var raw = b64(blob);
+      var plain = await crypto.subtle.decrypt({name:'AES-GCM', iv:raw.slice(0,12)}, key, raw.slice(12));
+      views[mo.label] = JSON.parse(new TextDecoder().decode(plain));
+      found = true;
+    }
+    return found ? views : null;
   }
 
   function header(){
@@ -170,10 +183,10 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
       if (code.length !== 9){ err.textContent = '설계사 코드는 숫자 9자리예요. 다시 확인해 주세요.'; inp.focus(); return; }
       btn.disabled = true; btn.textContent = '조회 중...'; err.textContent='';
       try{
-        var rec = await lookup(code);
-        if (!rec){ btn.disabled=false; btn.textContent='조회'; err.textContent='일치하는 설계사 코드가 없어요. 코드를 다시 확인해 주세요.'; inp.focus(); return; }
+        var views = await lookup(code);
+        if (!views){ btn.disabled=false; btn.textContent='조회'; err.textContent='일치하는 설계사 코드가 없어요. 코드를 다시 확인해 주세요.'; inp.focus(); return; }
         store(KEY, cb.checked ? code : null);
-        showResult(rec);
+        showResult(views, null, true);
       }catch(e){
         btn.disabled=false; btn.textContent='조회'; err.textContent='조회에 실패했어요. 잠시 후 다시 시도해 주세요.';
       }
@@ -183,25 +196,27 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
     setTimeout(function(){ try{ inp.focus(); }catch(e){} }, 0);
   }
 
-  function promoCard(P, r){
+  function promoCard(P, M, r){
     var c = el('section','card');
     var h = el('div','head');
-    h.append(el('span','badge gold', String(D.inc.length+1).padStart(2,'0')), el('h2',null,P.name));
+    h.append(el('span','badge gold', String(M.inc.length+1).padStart(2,'0')), el('h2',null,P.name));
     c.appendChild(h);
     if (P.desc) c.appendChild(el('p','pdesc',P.desc));
-    P.items.forEach(function(it){
-      var has = it.k >= 0;
-      var v = has ? r.p[it.k] : 0;
+    P.months.forEach(function(mo){
+      var k = -1;
+      for (var j = 0; j < M.perf.length; j++){ if (M.perf[j].indexOf(mo) === 0){ k = j; break; } }
+      var has = k >= 0;
+      var v = has ? r.p[k] : 0;
       var pct = P.target ? v / P.target * 100 : 0;
       var done = has && v >= P.target;
       var g = el('div','gauge');
       var top = el('div','gtop');
-      top.appendChild(el('span','gl', it.l));
+      top.appendChild(el('span','gl', mo));
       top.appendChild(el('span','gp' + (done ? ' ok' : (has ? '' : ' wait')),
         !has ? '집계 전' : (done ? '달성 완료 ' + Math.floor(pct) + '%' : Math.floor(pct) + '%')));
       var tr = el('div','track');
       tr.setAttribute('role','progressbar');
-      tr.setAttribute('aria-label', it.l + ' ' + P.name + ' 달성률');
+      tr.setAttribute('aria-label', mo + ' ' + P.name + ' 달성률');
       tr.setAttribute('aria-valuemin','0'); tr.setAttribute('aria-valuemax', String(P.target));
       tr.setAttribute('aria-valuenow', String(Math.min(v, P.target)));
       var f = el('div','fill');
@@ -212,68 +227,98 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
       var b = el('span'); b.append('목표 ', Object.assign(el('b'),{textContent: won(P.target)}));
       nm.append(a, b);
       g.append(top, tr, nm);
-      g.appendChild(el('p','grest', !has ? it.l + ' 실적 자료가 들어오면 표시돼요.' : (done ? '목표를 달성했어요.' : '목표까지 ' + won(P.target - v) + ' 남았어요.')));
+      g.appendChild(el('p','grest', !has ? mo + ' 실적 자료가 들어오면 표시돼요.' : (done ? '목표를 달성했어요.' : '목표까지 ' + won(P.target - v) + ' 남았어요.')));
       c.appendChild(g);
     });
     return c;
   }
 
-  function showResult(r){
+  function monthOf(label){
+    for (var i = 0; i < D.months.length; i++) if (D.months[i].label === label) return D.months[i];
+    return null;
+  }
+
+  function showResult(views, active, first){
+    // 가장 최근에 자료가 있는 월을 기본으로 보여준다
+    if (!active){
+      for (var i = D.months.length - 1; i >= 0; i--){ if (views[D.months[i].label]){ active = D.months[i].label; break; } }
+    }
+    var latest = null;
+    for (var q = D.months.length - 1; q >= 0; q--){ if (views[D.months[q].label]){ latest = views[D.months[q].label]; break; } }
+    var M = monthOf(active), r = views[active] || null;
+
     app.textContent = '';
     app.appendChild(header());
-    app.appendChild(el('h1', null, r.n + ' 님 ' + D.month + ' ' + D.page_title));
-    app.appendChild(el('p','sub', D.basis_date + ' 기준'));
+    app.appendChild(el('h1', null, latest.n + ' 님 ' + active + ' ' + D.page_title));
+    var sub = el('p','sub', M && r ? M.basis_date + ' 기준' : (M ? '' : '집계 전'));
+    if (M && r && M.final) sub.appendChild(el('span','final','최종'));
+    app.appendChild(sub);
 
     var meta = el('p','meta');
-    var s1 = el('span'); s1.append('지사 ', Object.assign(el('b'),{textContent:r.b}));
-    var s2 = el('span'); s2.append('담당 ', Object.assign(el('b'),{textContent:r.m}));
+    var s1 = el('span'); s1.append('지사 ', Object.assign(el('b'),{textContent:latest.b}));
+    var s2 = el('span'); s2.append('담당 ', Object.assign(el('b'),{textContent:latest.m}));
     meta.append(s1, s2);
     app.appendChild(meta);
 
-    var sum = el('section','sum');
-    var last = D.perf.length - 1;
-    var top = el('div','row');
-    top.append(el('span','lab', D.perf[last]), el('span','big', won(r.p[last])));
-    sum.appendChild(top);
-    for (var i = last-1; i >= 0; i--){
-      sum.appendChild(el('hr','sep'));
-      var row = el('div','row');
-      row.append(el('span','lab', D.perf[i]), el('span','small', won(r.p[i])));
-      sum.appendChild(row);
-    }
-    app.appendChild(sum);
-
-    D.inc.forEach(function(name, i){
-      var c = el('section','card');
-      var h = el('div','head');
-      h.append(el('span','badge', String(i+1).padStart(2,'0')), el('h2',null,name));
-      var b = el('div','body');
-      b.appendChild(el('span','basis', D.note[i] || '시책 기준은 하단 안내를 확인해 주세요.'));
-      var a = el('div','amt');
-      a.appendChild(el('span','m', man(r.i[i])));
-      if (r.i[i]) a.appendChild(el('span','w', won(r.i[i])));
-      b.appendChild(a);
-      c.append(h, b);
-      app.appendChild(c);
+    var tabs = el('div','tabs'); tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','월 선택');
+    D.tabs.forEach(function(t){
+      var b = el('button','tab' + (t.pending ? ' pending' : ''), t.l);
+      b.type = 'button'; b.setAttribute('role','tab'); b.setAttribute('aria-selected', t.l === active ? 'true' : 'false');
+      b.addEventListener('click', function(){ if (t.l !== active) showResult(views, t.l, false); });
+      tabs.appendChild(b);
     });
+    app.appendChild(tabs);
 
-    if (D.promo) app.appendChild(promoCard(D.promo, r));
+    if (!M){
+      app.appendChild(el('p','msg', active + ' 자료는 첫 업데이트 후에 표시돼요.'));
+    } else if (!r){
+      app.appendChild(el('p','msg', active + ' 자료에는 내 코드가 없어요. 궁금한 점은 담당 매니저에게 문의해 주세요.'));
+    } else {
+      var sum = el('section','sum');
+      var last = M.perf.length - 1;
+      var top = el('div','row');
+      top.append(el('span','lab', M.perf[last]), el('span','big', won(r.p[last])));
+      sum.appendChild(top);
+      for (var i2 = last-1; i2 >= 0; i2--){
+        sum.appendChild(el('hr','sep'));
+        var row = el('div','row');
+        row.append(el('span','lab', M.perf[i2]), el('span','small', won(r.p[i2])));
+        sum.appendChild(row);
+      }
+      app.appendChild(sum);
 
-    var foot = el('section','foot');
-    foot.appendChild(el('h3',null,D.footer_title));
-    D.footer_lines.forEach(function(t){ foot.appendChild(el('p',null,t)); });
-    foot.appendChild(el('p','src',D.source_line));
-    app.appendChild(foot);
+      M.inc.forEach(function(name, i){
+        var c = el('section','card');
+        var h = el('div','head');
+        h.append(el('span','badge', String(i+1).padStart(2,'0')), el('h2',null,name));
+        var b = el('div','body');
+        b.appendChild(el('span','basis', M.note[i] || '시책 기준은 하단 안내를 확인해 주세요.'));
+        var a = el('div','amt');
+        a.appendChild(el('span','m', man(r.i[i])));
+        if (r.i[i]) a.appendChild(el('span','w', won(r.i[i])));
+        b.appendChild(a);
+        c.append(h, b);
+        app.appendChild(c);
+      });
+
+      if (D.promo && D.promo.months.indexOf(active) >= 0) app.appendChild(promoCard(D.promo, M, r));
+
+      var foot = el('section','foot');
+      foot.appendChild(el('h3',null,D.footer_title));
+      D.footer_lines.forEach(function(t){ foot.appendChild(el('p',null,t)); });
+      foot.appendChild(el('p','src',D.source_line.replace('{basis_date}', M.basis_date)));
+      app.appendChild(foot);
+    }
 
     var back = el('button','ghost','다른 코드로 조회'); back.type='button';
     back.addEventListener('click', function(){ store(KEY,null); showLogin(); window.scrollTo(0,0); });
     app.appendChild(back);
-    window.scrollTo(0,0);
+    if (first) window.scrollTo(0,0);
   }
 
   var saved = load(KEY);
   if (saved && /^\d{9}$/.test(saved)){
-    lookup(saved).then(function(rec){ rec ? showResult(rec) : showLogin(); }, function(){ showLogin(); });
+    lookup(saved).then(function(views){ views ? showResult(views, null, true) : showLogin(); }, function(){ showLogin(); });
   } else {
     showLogin();
   }
