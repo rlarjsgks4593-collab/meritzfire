@@ -95,7 +95,9 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
 .tab small{font-weight:400;font-size:12px;margin-left:4px;opacity:.85}
 .msg{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;color:var(--muted);margin:0}
 .final{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--tint);color:var(--brand-ink);font-size:12px;font-weight:700;vertical-align:1px}
+.card.promo{border:2px solid var(--gold)}
 .pdesc{margin:-4px 0 0;color:var(--muted);font-size:13.5px}
+.pnote{margin:-8px 0 0;color:var(--muted);font-size:12.5px;word-break:keep-all}
 .gauge{display:flex;flex-direction:column;gap:8px}
 .gauge+.gauge{padding-top:14px;border-top:1px solid var(--line)}
 .gtop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
@@ -197,11 +199,12 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
   }
 
   function promoCard(P, M, r){
-    var c = el('section','card');
+    var c = el('section','card promo');
     var h = el('div','head');
     h.append(el('span','badge gold', String(M.inc.length+1).padStart(2,'0')), el('h2',null,P.name));
     c.appendChild(h);
     if (P.desc) c.appendChild(el('p','pdesc',P.desc));
+    if (P.note) c.appendChild(el('p','pnote',P.note));
     P.months.forEach(function(mo){
       var k = -1;
       for (var j = 0; j < M.perf.length; j++){ if (M.perf[j].indexOf(mo) === 0){ k = j; break; } }

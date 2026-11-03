@@ -165,7 +165,7 @@ def build_site():
     }
     pr = cfg.get('promo')
     if pr:
-        meta['promo'] = {'name': pr['name'], 'desc': pr.get('desc', ''), 'target': int(pr['target']), 'months': pr['months']}
+        meta['promo'] = {'name': pr['name'], 'desc': pr.get('desc', ''), 'note': pr.get('note', ''), 'target': int(pr['target']), 'months': pr['months']}
     html = open(os.path.join(HERE, 'template.html'), encoding='utf-8').read()
     blob = json.dumps(meta, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
     html = html.replace('__DATA__', blob)
