@@ -111,6 +111,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
 .gnum{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .gnum b{font-weight:500;color:var(--ink)}
 .grest{margin:0;font-size:13px;color:var(--muted)}
+.gcalc{margin:-2px 0 0;font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:no-preference){ button{transition:opacity .15s} .fill{transition:width .5s ease} }
 </style>
 
@@ -209,7 +210,9 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
       var k = -1;
       for (var j = 0; j < M.perf.length; j++){ if (M.perf[j].indexOf(mo) === 0){ k = j; break; } }
       var has = k >= 0;
-      var v = has ? r.p[k] : 0;
+      var raw = has ? r.p[k] : 0;
+      var mult = P.mult || 1;
+      var v = Math.round(raw * mult);
       var pct = P.target ? v / P.target * 100 : 0;
       var done = has && v >= P.target;
       var g = el('div','gauge');
@@ -226,10 +229,11 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-
       f.style.width = Math.max(0, Math.min(100, pct)) + '%';
       tr.appendChild(f);
       var nm = el('div','gnum');
-      var a = el('span'); a.append('현재 ', Object.assign(el('b'),{textContent: won(v)}));
+      var a = el('span'); a.append(mult !== 1 ? '인정 실적 ' : '현재 ', Object.assign(el('b'),{textContent: won(v)}));
       var b = el('span'); b.append('목표 ', Object.assign(el('b'),{textContent: won(P.target)}));
       nm.append(a, b);
       g.append(top, tr, nm);
+      if (has && mult !== 1) g.appendChild(el('p','gcalc', mo + ' 실적 ' + won(raw) + ' × ' + Math.round(mult * 100) + '% 적용'));
       g.appendChild(el('p','grest', !has ? mo + ' 실적 자료가 들어오면 표시돼요.' : (done ? '목표를 달성했어요.' : '목표까지 ' + won(P.target - v) + ' 남았어요.')));
       c.appendChild(g);
     });
